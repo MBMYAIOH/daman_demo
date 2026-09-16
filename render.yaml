@@ -1,0 +1,25 @@
+# Render blueprint - deploys the interface and the proxy as one web service.
+# The browser and the proxy share an origin, so no CORS configuration is needed.
+#
+# Deploy: push this repo, then New > Blueprint in the Render dashboard.
+services:
+  - type: web
+    name: daman-claims-demo
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # The n8n webhook that receives uploaded claim documents.
+      # sync: false means Render prompts for it instead of storing it here.
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      # Comma-separated hosts the proxy may forward to. Defaults to the webhook's
+      # own host; set it explicitly if resume URLs come back on another host.
+      - key: ALLOWED_WEBHOOK_HOSTS
+        sync: false

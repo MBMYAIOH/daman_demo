@@ -1,0 +1,22 @@
+{
+  "name": "daman-claims-proxy",
+  "version": "1.0.0",
+  "description": "CORS proxy and static host for the Daman claims document processing interface",
+  "main": "cors-proxy.js",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node cors-proxy.js",
+    "dev": "node cors-proxy.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.18.2",
+    "form-data": "^4.0.0",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.7.0"
+  }
+}

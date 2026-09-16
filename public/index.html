@@ -1,0 +1,3111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daman - Claims Document Processor</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300..700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=check,content_copy,upload_file" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* ============================================================
+           Daman brand tokens - change these to re-skin the interface
+           ============================================================ */
+        :root {
+            --brand: #882345;          /* Daman maroon */
+            --brand-dark: #6b1b36;
+            --brand-darker: #4f1428;
+            --brand-tint: #fdf7f9;
+            --brand-tint-2: #f7e9ee;
+            --brand-tint-3: #f1dbe2;
+            --navy: #003478;           /* Daman navy */
+            --ink: #010913;
+            --muted: #6c6f70;
+            --line: #e9eaec;
+            --page-from: #f6f7f9;
+            --page-to: #e4e7ed;
+            --font: 'Roboto Flex', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: linear-gradient(135deg, var(--page-from) 0%, var(--page-to) 100%);
+            color: var(--ink);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 110px;
+            height: auto;
+            margin-bottom: 18px;
+        }
+
+        .upload-section {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed var(--brand);
+            border-radius: 10px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--brand-tint);
+        }
+
+        .upload-area:hover {
+            background: var(--brand-tint-2);
+            border-color: var(--brand-dark);
+        }
+
+        .upload-area.dragover {
+            background: var(--brand-tint-3);
+            border-color: var(--brand-darker);
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            color: var(--brand);
+            margin-bottom: 20px;
+        }
+
+        .upload-icon .material-symbols-outlined {
+            font-size: 64px;
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--brand-tint-2);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(136, 35, 69, 0.35);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--brand);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn-view-summary.loading .arrow {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        .results-section {
+            display: none;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .result-card {
+            background: var(--brand-tint);
+            border: 2px solid var(--brand);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--brand);
+        }
+
+        .result-title {
+            font-size: 24px;
+            color: var(--brand-dark);
+            font-weight: 600;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th {
+            background: var(--brand);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 16px;
+            border: 1px solid var(--brand-dark);
+        }
+
+        .data-table th:last-child {
+            border-left: none;
+            border-right: none;
+        }
+
+        .data-table td {
+            padding: 15px;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            border-left: 1px solid var(--line);
+            border-right: none;
+            vertical-align: middle;
+        }
+
+        .data-table td:first-child {
+            border-left: 1px solid var(--line);
+        }
+
+        .data-table td:nth-child(2) {
+            border-right: 1px solid var(--line);
+        }
+
+        .data-table td:last-child {
+            border-right: none !important;
+            border-left: none !important;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: var(--brand-tint);
+        }
+
+        .data-table tr:hover {
+            background: var(--brand-tint-2);
+        }
+
+        .field-name-cell {
+            font-weight: 600;
+            color: #333;
+            text-transform: capitalize;
+            width: 25%;
+        }
+
+        .field-value-cell {
+            width: 40%;
+        }
+
+        .field-image-cell {
+            width: 35%;
+            text-align: center;
+            border-left: none !important;
+            border-right: none !important;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--line);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .field-input:focus {
+            outline: none;
+            border-color: var(--brand);
+        }
+
+        .checkbox-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-field input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .array-field {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .array-tag {
+            background: var(--brand);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .array-tag-delete {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 1;
+            transition: transform 0.2s ease;
+        }
+
+        .array-tag-delete:hover {
+            transform: scale(1.3);
+        }
+
+        .file-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            margin-top: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--line);
+            transition: all 0.2s ease;
+        }
+
+        .file-list-item:hover {
+            background: var(--brand-tint);
+            border-color: var(--brand);
+        }
+
+        .file-list-item-info {
+            flex: 1;
+            color: #333;
+        }
+
+        .file-list-item-remove {
+            cursor: pointer;
+            color: #f44336;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .file-list-item-remove:hover {
+            background: #ffebee;
+            transform: scale(1.2);
+        }
+
+        .array-add-btn {
+            background: var(--brand-dark);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 28px;
+            vertical-align: middle;
+        }
+
+        .array-add-btn:hover {
+            background: var(--brand-darker);
+            transform: scale(1.1);
+        }
+
+        .field-snippet-image {
+            max-width: 100%;
+            max-height: 150px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            transform-origin: center center;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .field-snippet-image:hover {
+            opacity: 0.8;
+        }
+
+        .validation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .validation-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .modal-icon {
+            font-size: 36px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            color: #c33;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            color: #555;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            text-align: right;
+        }
+
+        .modal-btn {
+            background: var(--brand);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:hover {
+            background: var(--brand-dark);
+        }
+
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .image-modal.show {
+            display: flex;
+        }
+
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10001;
+            transition: all 0.3s ease;
+        }
+
+        .image-modal-close:hover {
+            color: var(--brand);
+            transform: scale(1.2);
+        }
+
+        .document-preview {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid var(--line);
+        }
+
+        .document-preview h3 {
+            color: var(--brand-dark);
+            margin-bottom: 20px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--brand);
+            border: 2px solid var(--brand);
+        }
+
+        .btn-secondary:hover {
+            background: var(--brand);
+            color: white;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 2px solid #f88;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            color: #2e7d32;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+        .input-error {
+            border-color: #f44336 !important;
+        }
+
+        .copy-icon {
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 20px;
+            color: var(--brand);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            user-select: none;
+        }
+
+        .copy-icon:hover {
+            color: var(--brand-dark);
+            transform: scale(1.15);
+        }
+
+        .copy-icon:active {
+            transform: scale(0.9);
+        }
+
+        .copy-icon.copied {
+            color: #4caf50;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24;
+        }
+
+        .field-value-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .field-value-wrapper .field-input,
+        .field-value-wrapper .checkbox-field,
+        .field-value-wrapper .array-field {
+            flex: 1;
+        }
+
+        /* Claim Summary Accordion Styles */
+        .btn-view-summary {
+            background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-view-summary:hover {
+            background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-darker) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(136, 35, 69, 0.35);
+        }
+
+        .btn-view-summary .arrow {
+            transition: transform 0.3s ease;
+            font-size: 18px;
+        }
+
+        .btn-view-summary.expanded .arrow {
+            transform: rotate(180deg);
+        }
+
+        .claim-summary-accordion {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+            opacity: 0;
+            background: var(--brand-tint);
+            border-radius: 10px;
+            margin-top: 0;
+        }
+
+        .claim-summary-accordion.expanded {
+            max-height: 10000px;
+            overflow: visible;
+            opacity: 1;
+            margin-top: 20px;
+            padding: 30px;
+            border: 2px solid var(--brand);
+        }
+
+        .claim-summary-content {
+            color: #333;
+        }
+
+        .claim-summary-content h2 {
+            color: var(--brand);
+            font-size: 20px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--line);
+            padding-bottom: 8px;
+        }
+
+        .claim-summary-content h2:first-child {
+            margin-top: 0;
+        }
+
+        .claim-summary-content h3 {
+            color: var(--brand-dark);
+            font-size: 16px;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        .claim-summary-content p {
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .claim-summary-content em {
+            color: #666;
+            font-style: italic;
+        }
+
+        .claim-summary-content strong {
+            color: var(--brand-dark);
+            font-weight: 600;
+        }
+
+        .claim-summary-content code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #c33;
+        }
+
+        /* Error Page Styles */
+        .error-page {
+            display: none;
+            background: white;
+            padding: 60px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .error-page.show {
+            display: block;
+        }
+
+        .error-page-icon {
+            font-size: 80px;
+            color: #f44336;
+            margin-bottom: 20px;
+        }
+
+        .error-page-title {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .error-page-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .error-page-details {
+            background: #fff3f3;
+            border: 1px solid #ffcdd2;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px auto;
+            max-width: 600px;
+            text-align: left;
+        }
+
+        .error-page-details-title {
+            font-weight: 600;
+            color: #c33;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .error-page-details-list {
+            list-style: none;
+            padding: 0;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .error-page-details-list li {
+            padding-left: 20px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .error-page-details-list li:before {
+            content: "•";
+            position: absolute;
+            left: 5px;
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        .error-page-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        /* Checklist Styles */
+        .checklist-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: var(--brand-tint);
+            border: 2px solid var(--brand);
+            border-radius: 10px;
+        }
+
+        .checklist-title {
+            font-size: 22px;
+            color: var(--brand-dark);
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--brand);
+        }
+
+        .checklist-items {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid var(--line);
+            transition: all 0.3s ease;
+        }
+
+        .checklist-item.passed {
+            border-color: #4caf50;
+            background: #f1f8f4;
+        }
+
+        .checklist-item.failed {
+            border-color: #f44336;
+            background: #fff3f3;
+        }
+
+        .checklist-item-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .checklist-icon {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .checklist-icon.passed {
+            color: #4caf50;
+        }
+
+        .checklist-icon.failed {
+            color: #f44336;
+        }
+
+        .checklist-item-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .checklist-item-required {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .checklist-item-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .checklist-item-status.passed {
+            background: #4caf50;
+            color: white;
+        }
+
+        .checklist-item-status.failed {
+            background: #f44336;
+            color: white;
+        }
+
+        .claim-summary-box {
+            background: var(--brand-tint);
+            border: 2px solid var(--brand);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .claim-summary-box h2 {
+            color: var(--brand);
+            font-size: 20px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--line);
+            padding-bottom: 8px;
+        }
+
+        .claim-summary-box h2:first-child {
+            margin-top: 0;
+        }
+
+        .claim-summary-box h3 {
+            color: var(--brand-dark);
+            font-size: 16px;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        .claim-summary-box p {
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        /* Case Summary Styles */
+        .case-summary-section {
+            background: var(--brand-tint);
+            border: 2px solid var(--brand);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .case-summary-title {
+            font-size: 22px;
+            color: var(--brand-dark);
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--brand);
+        }
+
+        .case-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .case-summary-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+        }
+
+        .case-summary-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .case-summary-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .case-summary-value.highlight {
+            color: var(--brand);
+            font-size: 18px;
+        }
+
+        .case-summary-value.success {
+            color: #4caf50;
+        }
+
+        .case-summary-value.warning {
+            color: #ff9800;
+        }
+
+        .case-summary-value.error {
+            color: #f44336;
+        }
+
+        .coverage-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .coverage-badge.covered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .coverage-badge.not-covered {
+            background: #f44336;
+            color: white;
+        }
+
+        .coverage-badge.partial {
+            background: #ff9800;
+            color: white;
+        }
+
+        .financial-summary {
+            background: linear-gradient(135deg, var(--brand-tint) 0%, var(--brand-tint-2) 100%);
+            border: 2px solid var(--brand);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .financial-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .financial-row:last-child {
+            border-bottom: none;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--brand);
+            padding-top: 15px;
+            margin-top: 10px;
+            border-top: 2px solid var(--brand);
+        }
+
+        .financial-label {
+            font-size: 15px;
+            color: #555;
+        }
+
+        .financial-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        /* Form controls do not inherit the page font by default */
+        button, input, textarea, select {
+            font-family: var(--font);
+        }
+
+        .header {
+            border-top: 4px solid var(--brand);
+        }
+
+        .field-input:focus {
+            box-shadow: 0 0 0 3px rgba(136, 35, 69, 0.12);
+        }
+
+        .checkbox-field input[type="checkbox"] {
+            accent-color: var(--brand);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="logo.svg" alt="Daman" class="logo" id="logoImg">
+            <h1 id="appTitle" style="color: var(--brand); font-size: 32px;">Claims Document Processing</h1>
+            <p id="appSubtitle" style="color: var(--muted); margin-top: 10px;">Upload member claim documents for automated extraction and adjudication</p>
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <span class="material-symbols-outlined">upload_file</span>
+                </div>
+                <div class="upload-text">Click to upload or drag and drop</div>
+                <div class="upload-subtext" id="uploadHint">Claim form, invoice, receipt, prescription or medical report &mdash; up to 5 documents</div>
+                <input type="file" id="fileInput" accept="*/*" multiple>
+            </div>
+            
+            <div class="file-info" id="fileInfo">
+                <strong>Selected files:</strong>
+                <div id="fileList"></div>
+            </div>
+
+            <div style="text-align: center; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn" id="uploadBtn" disabled>Process Claim Documents</button>
+                <button class="btn btn-secondary" id="loadMockBtn" style="display: none;">Load Mock Data (Dev Mode)</button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="color: #666; font-size: 18px;">Processing your claim documents...</p>
+            <p style="color: #999; font-size: 14px; margin-top: 10px;">This may take a few moments</p>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <h2 style="color: var(--brand-dark); margin-bottom: 30px; font-size: 28px;">Extracted Claim Data</h2>
+            <div id="resultsContainer"></div>
+            
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="exportJSON()">Export JSON</button>
+                <button class="btn btn-secondary" onclick="processAnother()">Process Another Claim</button>
+            </div>
+        </div>
+
+        <!-- Claim Summary Page Section -->
+        <div class="results-section" id="claimSummarySection">
+            <h2 style="color: var(--brand-dark); margin-bottom: 30px; font-size: 28px;">Claim Summary &amp; Document Checklist</h2>
+            <div id="claimSummaryContainer"></div>
+            
+            <div class="success-message" id="claimSuccessMessage"></div>
+            
+            <div class="action-buttons">
+                <button class="btn" id="proceedToCaseSummaryBtn" onclick="handleProceedToCaseSummary()" style="background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);">Proceed to Case Summary</button>
+                <button class="btn btn-secondary" onclick="goBackToFields()">Back to Edit Fields</button>
+                <button class="btn btn-secondary" onclick="processAnother()">Process Another Claim</button>
+            </div>
+        </div>
+
+        <!-- Case Summary Page Section -->
+        <div class="results-section" id="caseSummarySection">
+            <h2 style="color: var(--brand-dark); margin-bottom: 30px; font-size: 28px;">Case Summary &amp; Decision</h2>
+            <div id="caseSummaryContainer"></div>
+            
+            <div class="success-message" id="caseSuccessMessage"></div>
+            
+            <div class="action-buttons">
+                <button class="btn" onclick="saveChangesFromCaseSummary(event)">Save & Submit</button>
+                <button class="btn btn-secondary" onclick="goBackToClaimSummary()">Back to Claim Summary</button>
+                <button class="btn btn-secondary" onclick="processAnother()">Process Another Claim</button>
+            </div>
+        </div>
+
+        <!-- Error Page Section -->
+        <div class="error-page" id="errorPage">
+            <h1 class="error-page-title">Processing Failed</h1>
+            <p class="error-page-subtitle">We couldn't process your claim document(s). The service returned no data or encountered an error.</p>
+            
+            <div class="error-page-details">
+                <div class="error-page-details-title">Possible Reasons:</div>
+                <ul class="error-page-details-list">
+                    <li>The document format is not supported or couldn't be read</li>
+                    <li>The API service is currently unavailable</li>
+                    <li>Network connection was interrupted</li>
+                    <li>The document contains no extractable data</li>
+                    <li>Server timeout or processing error</li>
+                </ul>
+            </div>
+
+            <div class="error-page-actions">
+                <button class="btn" onclick="retryUpload()">Try Again</button>
+                <button class="btn btn-secondary" onclick="processAnother()">Upload Different Documents</button>
+            </div>
+        </div>
+
+        <!-- Validation Modal -->
+        <div class="validation-modal" id="validationModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Required Fields Missing</div>
+                </div>
+                <div class="modal-body" id="modalMessage">
+                    Please fill in all required fields before saving.
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn" onclick="closeValidationModal()">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Enlarge Modal -->
+        <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+            <span class="image-modal-close">&times;</span>
+            <img class="image-modal-content" id="enlargedImage">
+        </div>
+
+        <!-- Add Array Item Modal -->
+        <div class="validation-modal" id="addArrayModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title" style="color: var(--brand-dark);">Add New Item</div>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="newArrayItemInput" class="field-input" placeholder="Enter new item..." style="width: 100%; margin-bottom: 10px;">
+                </div>
+                <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="modal-btn" style="background: #ccc;" onclick="closeAddArrayModal()">Cancel</button>
+                    <button class="modal-btn" id="confirmAddArrayItem">Add</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div class="validation-modal" id="confirmationModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title" style="color: #f57c00;">Confirm Action</div>
+                </div>
+                <div class="modal-body" id="confirmationMessage">
+                    Are you sure you want to proceed?
+                </div>
+                <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="modal-btn" style="background: #999;" onclick="closeConfirmationModal(false)">Cancel</button>
+                    <button class="modal-btn" onclick="closeConfirmationModal(true)">OK</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Load configuration file -->
+    <script src="config.js"></script>
+    
+    <script>
+        const WEBHOOK_URL = CONFIG.WEBHOOK_URL;
+        const MAX_FILE_SIZE = CONFIG.MAX_FILE_SIZE; 
+        const USE_CORS_PROXY = CONFIG.USE_CORS_PROXY; 
+        const CORS_PROXY_URL = CONFIG.CORS_PROXY_RESUME_URL; 
+
+        let selectedFiles = [];
+        let processedData = null;
+        let resumeURL2 = null; // Store resumeURL2 for final save
+        const REQUIRED_FIELDS = CONFIG.REQUIRED_FIELDS;
+        const EITHER_OR_FIELDS = CONFIG.EITHER_OR_FIELDS;
+        const MAX_FILES = CONFIG.MAX_FILES;
+        
+        // Fields that should NOT be editable (OCR-detected, see config.js)
+        const NON_EDITABLE_FIELDS = CONFIG.NON_EDITABLE_FIELDS || [];
+
+        // Display labels for UAE / Daman specific field names (see config.js)
+        const FIELD_LABELS = CONFIG.FIELD_LABELS || {};
+
+        // Daman branding, applied to the page on load
+        const BRAND = CONFIG.BRAND || {};
+        const CURRENCY = BRAND.CURRENCY || 'AED';
+
+        // Turns a raw field key into the label shown to the reviewer
+        function fieldLabel(key) {
+            return FIELD_LABELS[key] || key.replace(/_/g, ' ');
+        }
+
+        // Applies the configured branding to the document
+        function applyBranding() {
+            if (BRAND.NAME) {
+                document.title = `${BRAND.NAME} - Claims Document Processor`;
+            }
+            const logoEl = document.getElementById('logoImg');
+            if (logoEl && BRAND.LOGO) {
+                logoEl.src = BRAND.LOGO;
+                logoEl.alt = BRAND.NAME || '';
+            }
+            const titleEl = document.getElementById('appTitle');
+            if (titleEl && BRAND.APP_TITLE) {
+                titleEl.textContent = BRAND.APP_TITLE;
+            }
+            const subtitleEl = document.getElementById('appSubtitle');
+            if (subtitleEl && BRAND.APP_SUBTITLE) {
+                subtitleEl.textContent = BRAND.APP_SUBTITLE;
+            }
+            const hintEl = document.getElementById('uploadHint');
+            if (hintEl) {
+                hintEl.textContent = `Claim form, invoice, receipt, prescription or medical report — up to ${CONFIG.MAX_FILES} documents`;
+            }
+        }
+
+        applyBranding();
+
+        // Development Mode Toggle
+        const DEV_MODE = false; 
+        
+        window.testCodingData = function() {
+            const testData = [{
+                "invoice_number": "INV-TEST",
+                "receipt_number": "REC-TEST",
+                "claimed_amount": 500.00,
+                "documents_attached": ["REIMBURSEMENT_FORM", "INVOICE", "RECEIPT"],
+                "coding": "---\n\n## Primary diagnose\n*Description*: Cervical Myalgia\n*Code*: M54.1\n\n## Secondary diagnose\n*Description*: Severe pain in the backside of neck and left shoulder\n*Code*: M54.9\n\n## Procedures\n### Doctor Consultation + Treatment\n*Code*: 99213\n*Type*: SERVICE",
+                "resumeUrl": "https://n8n.example.com/webhook/resume-test"
+            }];
+
+            console.log('Testing with your exact data structure...');
+            processedData = testData;
+            displayResults(processedData);
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('resultsSection').classList.add('show');
+            console.log('\u2713 Test data loaded! Check if button appears.');
+        };
+
+        // Test function to simulate receiving the second payload (coding data)
+        // Usage in browser console: testSecondPayload()
+        window.testSecondPayload = function() {
+            console.log('Testing second payload arrival...');
+
+            const mockCodingPayload = [{
+                "coding": "---\n\n## Primary diagnose\n*Description*: Arrested dental caries\n*Code*: K02.5\n\n## Procedures\n### resin-based composite - one surface, posterior\n*Code*: D2391\n*Type*: DENTAL"
+            }];
+
+            window.receiveCodingPayload(mockCodingPayload);
+            console.log('Second payload simulated! Check if the View Claim Summary button is now active.');
+        };
+
+        const MOCK_RESPONSE = [
+            {
+                "invoice_number": "INV-2025-001",
+                "receipt_number": "REC-456789",
+                "claimed_amount": 1250.00,
+                "member_name": "Ahmed Al Mansoori",
+                "emirates_id": "784-1985-1234567-1",
+                "member_card_number": "DMN-0098-7766",
+                "policy_number": "POL-AUH-114253",
+                "payer": "Daman",
+                "plan": "Enhanced",
+                "network": "Gold",
+                "emirate": "Abu Dhabi",
+                "country": "United Arab Emirates",
+                "date_of_treatment": "2025-01-15",
+                "provider": "Burjeel Dental Clinic, Abu Dhabi",
+                "provider_license": "DOH-F-0001234",
+                "physician_name": "Dr. Layla Haddad",
+                "physician_license": "DOH-P-0045678",
+                "diagnosis": "Dental caries",
+                "treatment": "Filling - Composite Resin",
+                "claim_type": "DENTAL",
+                "docs_attached": ["Reimbursement Form", "Receipt", "Invoice", "Medical Report"],
+                "resumeUrl": "https://n8n.example.com/webhook/resume-123",
+
+                "coding": "## Primary diagnose\n*Description*: Arrested dental caries\n*Code*: K02.5\n\n## Procedures\n### Resin-based composite - one surface, posterior\n*Code*: D2391\n*Type*: DENTAL\n*Fee*: AED 920.00\n\n### Examination and diagnosis\n*Code*: D0120\n*Type*: PREVENTIVE\n*Fee*: AED 330.00",
+
+                "invoice_number_image_snippet": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                "claimed_amount_image_snippet": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                "base64_image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+            },
+            {
+                "invoice_number": "INV-2025-002",
+                "receipt_number": "REC-789012",
+                "claimed_amount": 3500.00,
+                "member_name": "Fatima Al Zaabi",
+                "emirates_id": "784-1992-7654321-9",
+                "member_card_number": "DMN-0043-1120",
+                "policy_number": "POL-AUH-220871",
+                "payer": "Daman",
+                "plan": "Thiqa",
+                "network": "Thiqa",
+                "emirate": "Abu Dhabi",
+                "country": "United Arab Emirates",
+                "date_of_treatment": "2025-01-20",
+                "provider": "Cleveland Clinic Abu Dhabi",
+                "provider_license": "DOH-F-0009876",
+                "physician_name": "Dr. Omar Khalifa",
+                "physician_license": "DOH-P-0011223",
+                "diagnosis": "Acute bronchitis",
+                "treatment": "Consultation and medication",
+                "claim_type": "CONSULTATION",
+                "docs_attached": ["Invoice", "Prescription"],
+                "resumeUrl": "https://n8n.example.com/webhook/resume-456",
+
+                "coding": "## Primary diagnose\n*Description*: Acute bronchitis\n*Code*: J20.9\n\n## Procedures\n### Office visit - established patient\n*Code*: 99213\n*Type*: CONSULTATION\n*Fee*: AED 550.00\n\n### Prescription medication\n*Code*: J3490\n*Type*: MEDICATION\n*Fee*: AED 310.00",
+
+                "invoice_number_image_snippet": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                "claimed_amount_image_snippet": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+            }
+        ];
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files);
+            }
+        });
+
+        function handleFileSelect(files) {
+            const fileArray = Array.from(files);
+
+            if (selectedFiles.length + fileArray.length > MAX_FILES) {
+                showError(`You can only upload up to ${MAX_FILES} files total. Currently selected: ${selectedFiles.length}. Trying to add: ${fileArray.length}.`);
+                return;
+            }
+
+            for (let file of fileArray) {
+                if (file.size > MAX_FILE_SIZE) {
+                    showError(`File "${file.name}" exceeds 50 MB limit. Please try a smaller file.`);
+                    return;
+                }
+                const isDuplicate = selectedFiles.some(existingFile => 
+                    existingFile.name === file.name && existingFile.size === file.size
+                );
+                if (!isDuplicate) {
+                    selectedFiles.push(file);
+                }
+            }
+
+            updateFileList();
+            hideError();
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const fileInfoContainer = document.getElementById('fileInfo');
+            fileList.innerHTML = '';
+            
+            if (selectedFiles.length === 0) {
+                fileInfoContainer.classList.remove('show');
+                uploadBtn.disabled = true;
+                return;
+            }
+            
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-list-item';
+                
+                const fileInfoText = document.createElement('div');
+                fileInfoText.className = 'file-list-item-info';
+                fileInfoText.textContent = `${index + 1}. ${file.name} (${formatFileSize(file.size)})`;
+                
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'file-list-item-remove';
+                removeBtn.textContent = '×';
+                removeBtn.title = 'Remove file';
+                removeBtn.addEventListener('click', () => removeFile(index));
+                
+                fileItem.appendChild(fileInfoText);
+                fileItem.appendChild(removeBtn);
+                fileList.appendChild(fileItem);
+            });
+
+            fileInfoContainer.classList.add('show');
+            uploadBtn.disabled = false;
+        }
+
+        function removeFile(index) {
+            if (index >= 0 && index < selectedFiles.length) {
+                const removedFile = selectedFiles[index];
+                selectedFiles.splice(index, 1);
+                console.log(`Removed file: ${removedFile.name}`);
+                
+                fileInput.value = '';
+                
+                updateFileList();
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        uploadBtn.addEventListener('click', uploadFile);
+
+        if (DEV_MODE) {
+            const loadMockBtn = document.getElementById('loadMockBtn');
+            loadMockBtn.style.display = 'inline-block';
+            loadMockBtn.addEventListener('click', loadMockData);
+            
+            const header = document.querySelector('.header p');
+            if (header) {
+                header.innerHTML += ' <span style="background: var(--navy); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-left: 10px;">DEV MODE</span>';
+            }
+        }
+
+        function loadMockData() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('errorPage').classList.remove('show');
+            document.getElementById('loading').classList.add('show');
+            hideError();
+
+            setTimeout(() => {
+                processedData = JSON.parse(JSON.stringify(MOCK_RESPONSE)); 
+                
+                if (!processedData || processedData.length === 0) {
+                    console.error('Mock data is empty');
+                    document.getElementById('loading').classList.remove('show');
+                    showErrorPage();
+                    return;
+                }
+                
+                displayResults(processedData);
+                
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('resultsSection').classList.add('show');
+                
+                console.log('Mock data loaded:', processedData);
+            }, 1000);
+        }
+
+        async function uploadFile() {
+            if (!selectedFiles || selectedFiles.length === 0) return;
+
+            if (DEV_MODE && selectedFiles.length > 0) {
+                console.log('DEV MODE: Using mock data instead of uploading');
+                loadMockData();
+                return;
+            }
+
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('loading').classList.add('show');
+            hideError();
+
+            try {
+                const formData = new FormData();
+                
+                selectedFiles.forEach((file, index) => {
+                    formData.append('file', file);
+                });
+
+                // Only sent in direct mode. In proxy mode the server picks the
+                // destination, so there is nothing useful to send.
+                if (WEBHOOK_URL) {
+                    formData.append('webhookUrl', WEBHOOK_URL);
+                }
+
+                const uploadUrl = USE_CORS_PROXY ? CONFIG.CORS_PROXY_UPLOAD_URL : WEBHOOK_URL;
+                
+                const response = await fetch(uploadUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    if (response.status === 413) {
+                        throw new Error('Files are too large for the server. Please try smaller files (recommended: under 10 MB each).');
+                    }
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                processedData = Array.isArray(data) ? data : [data];
+                
+                processedData = processedData.map(record => {
+                    if (record.coding) {
+                        const codingType = typeof record.coding;
+                        console.log('Original coding type:', codingType);
+                        console.log('Original coding value:', record.coding);
+                        console.log('Is Array?', Array.isArray(record.coding));
+                        
+                        if (codingType === 'object' && record.coding !== null) {
+                            if (Array.isArray(record.coding)) {
+                                console.log('Coding is an array with', record.coding.length, 'items');
+                                record.coding = record.coding.join('\n');
+                                console.log('Converted array to string');
+                            } 
+                            else if (record.coding.value) {
+                                console.log('Coding has .value property');
+                                record.coding = record.coding.value;
+                            }
+                            else if (record.coding.text) {
+                                console.log('Coding has .text property');
+                                record.coding = record.coding.text;
+                            }
+                            else if (record.coding.content) {
+                                console.log('Coding has .content property');
+                                record.coding = record.coding.content;
+                            }
+                            else {
+                                console.log('Converting object to JSON string');
+                                record.coding = JSON.stringify(record.coding, null, 2);
+                            }
+                        }
+                        
+                        console.log('Final coding type:', typeof record.coding);
+                        console.log('Final coding length:', record.coding?.length);
+                    }
+                    return record;
+                });
+                
+                console.log('=== RECEIVED DATA FROM WEBHOOK ===');
+                console.log('Full response:', data);
+                console.log('Processed data length:', processedData.length);
+                console.log('First record keys:', processedData[0] ? Object.keys(processedData[0]) : 'N/A');
+                console.log('Coding field value:', processedData[0]?.coding);
+                console.log('Coding field type:', typeof processedData[0]?.coding);
+                console.log('Coding field length:', processedData[0]?.coding?.length);
+                console.log('Has coding field?', (processedData[0]?.coding && typeof processedData[0]?.coding === 'string' && processedData[0].coding.trim().length > 0) ? 'YES' : 'NO');
+                if (processedData[0]?.coding && typeof processedData[0]?.coding === 'string' && processedData[0].coding.trim().length > 0) {
+                    console.log('Coding content preview:', processedData[0].coding.substring(0, 100));
+                }
+                console.log('===================================');
+
+                if (!processedData || processedData.length === 0 || !processedData[0] || Object.keys(processedData[0]).length === 0) {
+                    console.error('API returned empty or invalid data');
+                    document.getElementById('loading').classList.remove('show');
+                    showErrorPage();
+                    return;
+                }
+
+                // Display initial extraction results
+                displayResults(processedData);
+
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('resultsSection').classList.add('show');
+
+                // Store resumeURL1 for later use when user clicks Proceed
+                const resumeURL1 = processedData[0]?.resumeURL || processedData[0]?.resumeUrl;
+                if (resumeURL1) {
+                    console.log('✓ ResumeURL1 found, waiting for user to click Proceed...');
+                    // Store it globally so the Proceed button can use it
+                    window.storedResumeURL1 = resumeURL1;
+                } else {
+                    console.warn('⚠ No resumeURL found in response - cannot fetch claim summary');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').classList.remove('show');
+                
+                if (error.message === 'Failed to fetch' || error.message.includes('Server error')) {
+                    showErrorPage();
+                } else {
+                    document.getElementById('uploadSection').style.display = 'block';
+                    if (error.message === 'Failed to fetch') {
+                        showError('Connection failed. This could be due to:\n\n1. CORS policy blocking the request (most common)\n2. Network connection issue\n3. Webhook URL is incorrect\n\nSolution: Make sure the CORS proxy is running (npm run dev)');
+                    } else {
+                        showError('Failed to process documents: ' + error.message);
+                    }
+                }
+            }
+        }
+
+        // Handler for Proceed button click
+        function handleProceedClick(recordIndex) {
+            // Check if claim summary is already loaded
+            const item = processedData[recordIndex];
+            if (item.coding && item.checkList) {
+                // Data already loaded, just navigate to the summary page
+                console.log('✓ Claim summary already loaded, navigating directly...');
+                displayClaimSummaryPage(recordIndex);
+                return;
+            }
+            
+            const resumeURL1 = window.storedResumeURL1;
+            if (!resumeURL1) {
+                showError('No resume URL available to proceed');
+                return;
+            }
+            
+            // Update the proceed button to show processing
+            const proceedBtn = document.getElementById(`proceed-btn-${recordIndex}`);
+            if (proceedBtn) {
+                proceedBtn.disabled = true;
+                proceedBtn.textContent = 'Processing...';
+            }
+            
+            // Fetch the claim summary and navigate to second page
+            fetchClaimSummaryAndNavigate(resumeURL1, recordIndex);
+        }
+
+        // Function to fetch claim summary and navigate to second page
+        async function fetchClaimSummaryAndNavigate(resumeURL1, recordIndex = 0) {
+            console.log('Calling resumeURL1 to fetch claim summary and checklist...');
+            console.log('Sending extracted field data back to n8n...');
+
+            try {
+                // Prepare cleaned data to send back to n8n
+                const cleanedData = processedData.map(record => {
+                    const cleaned = {};
+                    Object.keys(record).forEach(key => {
+                        if (!key.endsWith('_image_snippet') && 
+                            key !== 'resumeUrl' && 
+                            key !== 'resumeURL' &&
+                            key !== 'base64_image' && 
+                            key !== 'coding' &&
+                            key !== 'checkList') {
+                            cleaned[key] = record[key];
+                        }
+                    });
+                    return cleaned;
+                });
+
+                console.log('Sending data:', cleanedData);
+
+                // Call resumeURL1 (either through proxy or direct)
+                let response;
+                if (USE_CORS_PROXY) {
+                    response = await fetch(CORS_PROXY_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            resumeUrl: resumeURL1,
+                            data: cleanedData
+                        })
+                    });
+                } else {
+                    response = await fetch(resumeURL1, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cleanedData)
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch claim summary: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('Received claim summary response:', result);
+                
+                // Extract the data - handle both array and object responses
+                const summaryData = Array.isArray(result) ? result[0] : result;
+                
+                console.log('Extracted data:', {
+                    hasCoding: !!summaryData.coding,
+                    hasChecklist: !!summaryData.checkList,
+                    checklistLength: summaryData.checkList?.length || 0,
+                    hasResumeURL: !!(summaryData.resumeURL || summaryData.resumeUrl)
+                });
+
+                // Store the coding in processedData
+                if (summaryData.coding) {
+                    processedData[recordIndex].coding = summaryData.coding;
+                }
+
+                // Store the checklist
+                if (summaryData.checkList) {
+                    processedData[recordIndex].checkList = summaryData.checkList;
+                }
+
+                // Store claim_type if present
+                if (summaryData.claim_type) {
+                    processedData[recordIndex].claim_type = summaryData.claim_type;
+                }
+
+                // Store resumeURL2 for final save
+                const newResumeURL = summaryData.resumeURL || summaryData.resumeUrl;
+                if (newResumeURL) {
+                    resumeURL2 = newResumeURL;
+                    console.log('ResumeURL2 received:', resumeURL2);
+                } else {
+                    console.warn('No resumeURL2 found in response - will use original resumeUrl');
+                }
+
+                // Navigate to the claim summary page
+                displayClaimSummaryPage(recordIndex);
+
+            } catch (error) {
+                console.error('Error fetching claim summary:', error);
+
+                // Re-enable the proceed button
+                const proceedBtn = document.getElementById(`proceed-btn-${recordIndex}`);
+                if (proceedBtn) {
+                    proceedBtn.disabled = false;
+                    proceedBtn.textContent = 'Proceed to Claim Summary';
+                }
+
+                showError('Failed to load claim summary: ' + error.message);
+            }
+        }
+
+        // Function to display the claim summary and checklist on the second page
+        function displayClaimSummaryPage(recordIndex = 0) {
+            console.log('Displaying claim summary page for record', recordIndex);
+            
+            const item = processedData[recordIndex];
+            
+            // Hide the first page
+            document.getElementById('resultsSection').classList.remove('show');
+            
+            // Show the claim summary page
+            const summarySection = document.getElementById('claimSummarySection');
+            summarySection.classList.add('show');
+            
+            // Render the content
+            const container = document.getElementById('claimSummaryContainer');
+            container.innerHTML = '';
+            
+            // Create claim summary box
+            if (item.coding) {
+                const summaryBox = document.createElement('div');
+                summaryBox.className = 'claim-summary-box';
+                const htmlContent = marked.parse(item.coding.trim());
+                summaryBox.innerHTML = htmlContent;
+                container.appendChild(summaryBox);
+                console.log('✓ Claim summary rendered');
+            }
+            
+            // Create checklist section
+            if (item.checkList && Array.isArray(item.checkList) && item.checkList.length > 0) {
+                const checklistSection = document.createElement('div');
+                checklistSection.className = 'checklist-section';
+                
+                let checklistHTML = `<h3 class="checklist-title">Document Checklist</h3>`;
+                checklistHTML += `<div class="checklist-items">`;
+                
+                item.checkList.forEach(checkItem => {
+                    const statusClass = checkItem.passed ? 'passed' : 'failed';
+                    const iconSymbol = checkItem.passed ? '✓' : '✕';
+                    
+                    checklistHTML += `
+                        <div class="checklist-item ${statusClass}">
+                            <div class="checklist-item-left">
+                                <span class="checklist-icon ${statusClass}">${iconSymbol}</span>
+                                <div>
+                                    <div class="checklist-item-name">${checkItem.item}</div>
+                                    ${checkItem.required ? '<div class="checklist-item-required">Required</div>' : ''}
+                                </div>
+                            </div>
+                            <span class="checklist-item-status ${statusClass}">${checkItem.status}</span>
+                            </div>
+                        `;
+                });
+                
+                checklistHTML += `</div>`;
+                checklistSection.innerHTML = checklistHTML;
+                container.appendChild(checklistSection);
+                console.log('✓ Checklist rendered with', item.checkList.length, 'items');
+            }
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // Function to go back to the fields page
+        function goBackToFields() {
+            document.getElementById('claimSummarySection').classList.remove('show');
+            document.getElementById('resultsSection').classList.add('show');
+            
+            // Update the proceed button text since data is already loaded
+            const proceedBtn = document.getElementById('proceed-btn-0');
+            if (proceedBtn) {
+                proceedBtn.textContent = 'View Claim Summary';
+                proceedBtn.disabled = false;
+            }
+            
+            window.scrollTo(0, 0);
+        }
+        
+        // Function to handle proceed to case summary
+        function handleProceedToCaseSummary(recordIndex = 0) {
+            // Show custom confirmation dialog
+            showConfirmationModal(
+                'Are you sure you want to proceed to case summary? You will not be able to go back to edit the claim summary and checklist after this step.',
+                (confirmed) => {
+                    if (!confirmed) {
+                        return; // User cancelled, do nothing
+                    }
+                    
+                    // Check if case summary data is already loaded
+                    const item = processedData[recordIndex];
+                    if (item.coverage_status && item.covered_amount !== undefined) {
+                        // Data already loaded, just navigate to the case summary page
+                        console.log('✓ Case summary already loaded, navigating directly...');
+                        displayCaseSummaryPage(recordIndex);
+                        return;
+                    }
+                    
+                    const resumeURL2Local = resumeURL2 || window.storedResumeURL1;
+                    if (!resumeURL2Local) {
+                        showError('No resume URL available to proceed');
+                        return;
+                    }
+                    
+                    // Update the button to show processing
+                    const proceedBtn = document.getElementById('proceedToCaseSummaryBtn');
+                    if (proceedBtn) {
+                        proceedBtn.disabled = true;
+                        proceedBtn.textContent = 'Processing...';
+                    }
+                    
+                    // Fetch the case summary and navigate to third page
+                    fetchCaseSummaryAndNavigate(resumeURL2Local, recordIndex);
+                }
+            );
+        }
+        
+        // Function to fetch case summary and navigate to third page
+        async function fetchCaseSummaryAndNavigate(resumeURL, recordIndex = 0) {
+            console.log('Calling resumeURL to fetch case summary...');
+            console.log('Sending claim summary data back to n8n...');
+
+            try {
+                // Prepare cleaned data to send back to n8n (including coding and checklist from page 2)
+                const cleanedData = processedData.map(record => {
+                    const cleaned = {};
+                    Object.keys(record).forEach(key => {
+                        if (!key.endsWith('_image_snippet') && 
+                            key !== 'resumeUrl' && 
+                            key !== 'resumeURL' &&
+                            key !== 'base64_image' &&
+                            key !== 'coverage_status' &&
+                            key !== 'covered_amount' &&
+                            key !== 'covered_amount_original' &&
+                            key !== 'covered_amount_aed' &&
+                            key !== 'patient_responsibility' &&
+                            key !== 'within_benefit_limit' &&
+                            key !== 'geographical_coverage' &&
+                            key !== 'geographically_covered' &&
+                            key !== 'coverage_issues' &&
+                            key !== 'benefit_limit' &&
+                            key !== 'benefit_limit_original' &&
+                            key !== 'benefit_limit_aed' &&
+                            key !== 'excess_amount' &&
+                            key !== 'copay_percentage' &&
+                            key !== 'copay_cap' &&
+                            key !== 'copay_amount' &&
+                            key !== 'copay_amount_original' &&
+                            key !== 'copay_amount_aed' &&
+                            key !== 'deductible' &&
+                            key !== 'max_sessions' &&
+                            key !== 'original_currency' &&
+                            key !== 'conversion_rate' &&
+                            key !== 'conversion_formula' &&
+                            key !== 'claimed_amount_original' &&
+                            key !== 'claimed_amount_aed' &&
+                            key !== 'reimbursement_amount_original' &&
+                            key !== 'reimbursement_amount_aed' &&
+                            key !== 'approval_status' &&
+                            key !== 'can_be_approved' &&
+                            key !== 'rejection_reasons' &&
+                            key !== 'claim_decision' &&
+                            key !== 'all_required_docs_present' &&
+                            key !== 'missing_documents') {
+                            cleaned[key] = record[key];
+                        }
+                    });
+                    return cleaned;
+                });
+
+                console.log('Sending data:', cleanedData);
+
+                // Call resumeURL (either through proxy or direct)
+                let response;
+                if (USE_CORS_PROXY) {
+                    response = await fetch(CORS_PROXY_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            resumeUrl: resumeURL,
+                            data: cleanedData
+                        })
+                    });
+                } else {
+                    response = await fetch(resumeURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cleanedData)
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch case summary: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('Received case summary response:', result);
+                
+                // Extract the data - handle both array and object responses
+                const caseSummaryData = Array.isArray(result) ? result[0] : result;
+                
+                console.log('Extracted case summary data:', {
+                    hasCoverageStatus: !!caseSummaryData.coverage_status,
+                    hasCoveredAmount: caseSummaryData.covered_amount !== undefined,
+                    hasResumeURL: !!(caseSummaryData.resumeURL || caseSummaryData.resumeUrl)
+                });
+
+                // Merge the case summary data into processedData
+                Object.keys(caseSummaryData).forEach(key => {
+                    processedData[recordIndex][key] = caseSummaryData[key];
+                });
+
+                // Store resumeURL3 for final save if present
+                const newResumeURL = caseSummaryData.resumeURL || caseSummaryData.resumeUrl;
+                if (newResumeURL) {
+                    resumeURL2 = newResumeURL;
+                    console.log('ResumeURL3 received:', resumeURL2);
+                }
+
+                // Navigate to the case summary page
+                displayCaseSummaryPage(recordIndex);
+
+            } catch (error) {
+                console.error('Error fetching case summary:', error);
+
+                // Re-enable the proceed button
+                const proceedBtn = document.getElementById('proceedToCaseSummaryBtn');
+                if (proceedBtn) {
+                    proceedBtn.disabled = false;
+                    proceedBtn.textContent = 'Proceed to Case Summary';
+                }
+
+                showError('Failed to load case summary: ' + error.message);
+            }
+        }
+        
+        // Function to display the case summary on the third page
+        function displayCaseSummaryPage(recordIndex = 0) {
+            console.log('Displaying case summary page for record', recordIndex);
+            
+            const item = processedData[recordIndex];
+            
+            // Hide the claim summary page
+            document.getElementById('claimSummarySection').classList.remove('show');
+            
+            // Show the case summary page
+            const caseSummarySection = document.getElementById('caseSummarySection');
+            caseSummarySection.classList.add('show');
+            
+            // Render the content
+            const container = document.getElementById('caseSummaryContainer');
+            container.innerHTML = '';
+            
+            // Member & Policy Information Section
+            const memberCardNumber = item.member_card_number || item.card_number;
+            const patientSection = document.createElement('div');
+            patientSection.className = 'case-summary-section';
+            patientSection.innerHTML = `
+                <h3 class="case-summary-title">Member & Policy Information</h3>
+                <div class="case-summary-grid">
+                    ${item.member_name ? `<div class="case-summary-item"><div class="case-summary-label">Member Name</div><div class="case-summary-value">${item.member_name}</div></div>` : ''}
+                    ${item.emirates_id ? `<div class="case-summary-item"><div class="case-summary-label">Emirates ID</div><div class="case-summary-value">${item.emirates_id}</div></div>` : ''}
+                    ${memberCardNumber ? `<div class="case-summary-item"><div class="case-summary-label">Daman Card Number</div><div class="case-summary-value">${memberCardNumber}</div></div>` : ''}
+                    ${item.policy_number ? `<div class="case-summary-item"><div class="case-summary-label">Policy Number</div><div class="case-summary-value">${item.policy_number}</div></div>` : ''}
+                    ${(item.payer || item.plan) ? `<div class="case-summary-item"><div class="case-summary-label">${item.payer && item.plan ? 'Payer & Plan' : (item.payer ? 'Payer' : 'Daman Plan')}</div><div class="case-summary-value">${item.payer && item.plan ? `${item.payer} - ${item.plan}` : (item.payer || item.plan)}</div></div>` : ''}
+                    ${item.network ? `<div class="case-summary-item"><div class="case-summary-label">Provider Network</div><div class="case-summary-value">${item.network}</div></div>` : ''}
+                    ${item.age ? `<div class="case-summary-item"><div class="case-summary-label">Age</div><div class="case-summary-value">${item.age}</div></div>` : ''}
+                    ${item.gender ? `<div class="case-summary-item"><div class="case-summary-label">Gender</div><div class="case-summary-value">${item.gender}</div></div>` : ''}
+                    ${item.emirate ? `<div class="case-summary-item"><div class="case-summary-label">Emirate</div><div class="case-summary-value">${item.emirate}</div></div>` : ''}
+                    ${item.country ? `<div class="case-summary-item"><div class="case-summary-label">Country of Treatment</div><div class="case-summary-value">${item.country}</div></div>` : ''}
+                    ${item.date_of_treatment ? `<div class="case-summary-item"><div class="case-summary-label">Date of Treatment</div><div class="case-summary-value">${item.date_of_treatment}</div></div>` : ''}
+                </div>
+            `;
+            container.appendChild(patientSection);
+            
+            // Medical Information Section
+            const medicalSection = document.createElement('div');
+            medicalSection.className = 'case-summary-section';
+            
+            // Map claim types to Daman benefit categories (see config.js)
+            const mapClaimTypeToBenefitType = (claimType) => {
+                if (!claimType) return '';
+                const mappings = CONFIG.CLAIM_TYPE_TO_BENEFIT || {};
+                return mappings[claimType.toUpperCase()] || claimType.replace(/_/g, ' ');
+            };
+            
+            const benefitType = mapClaimTypeToBenefitType(item.claim_type);
+            
+            medicalSection.innerHTML = `
+                <h3 class="case-summary-title">Medical Information</h3>
+                <div class="case-summary-grid">
+                    ${item.diagnosis ? `<div class="case-summary-item" style="grid-column: 1 / -1;"><div class="case-summary-label">Diagnosis</div><div class="case-summary-value">${item.diagnosis}</div></div>` : ''}
+                    ${item.provider ? `<div class="case-summary-item"><div class="case-summary-label">Provider</div><div class="case-summary-value">${item.provider}</div></div>` : ''}
+                    ${item.provider_license ? `<div class="case-summary-item"><div class="case-summary-label">Provider Licence</div><div class="case-summary-value">${item.provider_license}</div></div>` : ''}
+                    ${item.physician_name ? `<div class="case-summary-item"><div class="case-summary-label">Physician Name</div><div class="case-summary-value">${item.physician_name}</div></div>` : ''}
+                    ${item.physician_license ? `<div class="case-summary-item"><div class="case-summary-label">Physician Licence</div><div class="case-summary-value">${item.physician_license}</div></div>` : ''}
+                    ${item.claim_type ? `<div class="case-summary-item"><div class="case-summary-label">Benefit Type</div><div class="case-summary-value highlight">${benefitType}</div></div>` : ''}
+                </div>
+            `;
+            container.appendChild(medicalSection);
+            
+            // Coverage Status Section
+            const coverageSection = document.createElement('div');
+            coverageSection.className = 'case-summary-section';
+            
+            // Determine approval/rejection status
+            const isRejected = item.approval_status === 'REJECT' || item.approval_status === 'REJECTED' || item.coverage_status === 'NOT_COVERED' || item.claim_decision === 'REJECT';
+            const isApproved = item.approval_status === 'APPROVE' || item.approval_status === 'APPROVED' || item.coverage_status === 'COVERED' || item.claim_decision === 'APPROVE';
+            
+            let coverageBadgeClass = 'covered';
+            if (item.coverage_status === 'NOT_COVERED') coverageBadgeClass = 'not-covered';
+            else if (item.coverage_status === 'PARTIAL') coverageBadgeClass = 'partial';
+            
+            // Get rejection reasons from various possible fields
+            const rejectionReasons = item.rejection_reasons || item.decision_reasons || [];
+            const missingDocs = item.missing_documents || [];
+            
+            coverageSection.innerHTML = `
+                <h3 class="case-summary-title">Coverage & Approval Status</h3>
+                
+                ${item.approval_status || item.claim_decision ? `
+                    <div style="margin-bottom: 20px; padding: 20px; background: ${isRejected ? '#fff3f3' : '#f0fdf4'}; border-left: 4px solid ${isRejected ? '#f44336' : '#4caf50'}; border-radius: 4px;">
+                        <div style="font-size: 18px; font-weight: 600; color: ${isRejected ? '#f44336' : '#4caf50'}; margin-bottom: 10px;">
+                            ${isRejected ? '❌ Claim Rejected' : '✓ Claim Approved'}
+                        </div>
+                        ${isRejected && rejectionReasons.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 8px;">Rejection Reasons:</div>
+                                <ul style="margin: 0; padding-left: 20px; color: #666;">
+                                    ${rejectionReasons.map(reason => `<li>${reason}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        ${isRejected && missingDocs.length > 0 ? `
+                            <div style="margin-top: 15px;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 8px;">Missing Documents:</div>
+                                <ul style="margin: 0; padding-left: 20px; color: #d32f2f;">
+                                    ${missingDocs.map(doc => `<li>${doc}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        ${isRejected && (item.coverage_issues && item.coverage_issues.length > 0) ? `
+                            <div style="margin-top: 15px;">
+                                <div style="font-weight: 600; color: #333; margin-bottom: 8px;">Coverage Issues:</div>
+                                ${item.coverage_issues.map(issue => {
+                                    if (typeof issue === 'object' && issue.issue) {
+                                        return `
+                                            <div style="margin-bottom: 12px; padding: 12px; background: white; border-radius: 4px; border: 1px solid #ffcdd2;">
+                                                <div style="font-weight: 600; color: #d32f2f; margin-bottom: 4px;">
+                                                    ${issue.issue}
+                                                </div>
+                                                ${issue.details ? `<div style="color: #666; font-size: 14px; margin-bottom: 4px;">${issue.details}</div>` : ''}
+                                                ${issue.action_required ? `<div style="color: #f57c00; font-size: 14px; font-style: italic;">Action Required: ${issue.action_required}</div>` : ''}
+                                            </div>
+                                        `;
+                                    } else {
+                                        return `<div style="padding: 8px 0; color: #666;">• ${issue}</div>`;
+                                    }
+                                }).join('')}
+                            </div>
+                        ` : ''}
+                        ${isApproved ? `
+                            <div style="color: #2e7d32; font-size: 16px;">This claim has been approved for processing.</div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                
+                <div class="case-summary-grid">
+                    ${item.coverage_status ? `<div class="case-summary-item"><div class="case-summary-label">Coverage Status</div><div class="case-summary-value"><span class="coverage-badge ${coverageBadgeClass}">${item.coverage_status.replace(/_/g, ' ')}</span></div></div>` : ''}
+                    ${item.within_benefit_limit !== undefined ? `<div class="case-summary-item"><div class="case-summary-label">Within Benefit Limit</div><div class="case-summary-value ${item.within_benefit_limit ? 'success' : 'error'}">${item.within_benefit_limit ? 'Yes ✓' : 'No ✕'}</div></div>` : ''}
+                    ${item.geographical_coverage !== undefined ? `<div class="case-summary-item"><div class="case-summary-label">Geographical Coverage</div><div class="case-summary-value ${item.geographical_coverage ? 'success' : 'error'}">${item.geographical_coverage ? 'Yes ✓' : 'No ✕'}</div></div>` : ''}
+                    ${item.geographically_covered !== undefined ? `<div class="case-summary-item"><div class="case-summary-label">Geographically Covered</div><div class="case-summary-value ${item.geographically_covered ? 'success' : 'error'}">${item.geographically_covered ? 'Yes ✓' : 'No ✕'}</div></div>` : ''}
+                    ${item.max_sessions && item.max_sessions !== 'N/A' ? `<div class="case-summary-item"><div class="case-summary-label">Max Sessions</div><div class="case-summary-value">${item.max_sessions}</div></div>` : ''}
+                </div>
+            `;
+            container.appendChild(coverageSection);
+            
+            // Financial Summary Section
+            const financialSection = document.createElement('div');
+            financialSection.className = 'financial-summary';
+            
+            // Helper function to format dual currency display
+            const formatDualCurrency = (originalAmount, aedAmount) => {
+                if (!originalAmount && !aedAmount) return '';
+                
+                // Extract numeric values for comparison
+                const getNumericValue = (str) => {
+                    if (!str) return null;
+                    const match = String(str).match(/[\d,]+\.?\d*/);
+                    return match ? parseFloat(match[0].replace(/,/g, '')) : null;
+                };
+                
+                const originalValue = getNumericValue(originalAmount);
+                const aedValue = getNumericValue(aedAmount);
+                
+                // If both exist and have different numeric values, show both
+                if (originalAmount && aedAmount && originalValue !== null && aedValue !== null && originalValue !== aedValue) {
+                    return `<span style="font-weight: 600;">${originalAmount}</span> <span style="color: #888; font-size: 14px;">≈</span> <span style="font-weight: 600; color: var(--brand);">${aedAmount}</span>`;
+                }
+                
+                // If values are the same or only one exists, show just one (prefer AED if available)
+                return `<span style="font-weight: 600;">${aedAmount || originalAmount}</span>`;
+            };
+            
+            const hasDualCurrency = item.original_currency && item.original_currency !== CURRENCY;
+            
+            financialSection.innerHTML = `
+                <h3 class="case-summary-title" style="border-color: var(--brand);">Financial Breakdown</h3>
+                
+                <div class="financial-row">
+                    <span class="financial-label">Claimed Amount:</span>
+                    <span class="financial-value">${formatDualCurrency(item.claimed_amount_original, item.claimed_amount_aed)}</span>
+                </div>
+                
+                ${(item.benefit_limit_original || item.benefit_limit_aed) ? `
+                    <div class="financial-row">
+                        <span class="financial-label">Benefit Limit:</span>
+                        <span class="financial-value">${formatDualCurrency(item.benefit_limit_original, item.benefit_limit_aed)}</span>
+                    </div>
+                ` : ''}
+                
+                ${item.excess_amount ? `
+                    <div class="financial-row">
+                        <span class="financial-label">Excess Amount:</span>
+                        <span class="financial-value">${CURRENCY} ${item.excess_amount}</span>
+                    </div>
+                ` : ''}
+                
+                ${item.deductible !== undefined ? `
+                    <div class="financial-row">
+                        <span class="financial-label">Deductible:</span>
+                        <span class="financial-value">${CURRENCY} ${item.deductible}</span>
+                    </div>
+                ` : ''}
+                
+                ${item.copay_percentage ? `
+                    <div class="financial-row">
+                        <span class="financial-label">Co-pay Percentage:</span>
+                        <span class="financial-value">${item.copay_percentage}% ${item.copay_cap ? `(Cap: ${CURRENCY} ${item.copay_cap})` : ''}</span>
+                    </div>
+                ` : ''}
+                
+                ${(item.covered_amount_original || item.covered_amount_aed) ? `
+                    <div class="financial-row">
+                        <span class="financial-label">Covered Amount:</span>
+                        <span class="financial-value" style="color: #4caf50;">${formatDualCurrency(item.covered_amount_original, item.covered_amount_aed)}</span>
+                    </div>
+                ` : ''}
+                
+                ${item.patient_responsibility ? `
+                    <div class="financial-row">
+                        <span class="financial-label">Member Share:</span>
+                        <span class="financial-value" style="color: var(--brand); font-size: 20px;">${CURRENCY} ${item.patient_responsibility}</span>
+                    </div>
+                ` : ''}
+                
+                ${(item.copay_amount_original !== undefined || item.copay_amount_aed !== undefined) ? (() => {
+                    // Check if copay is zero
+                    const getNumericValue = (str) => {
+                        if (!str) return 0;
+                        const match = String(str).match(/[\d,]+\.?\d*/);
+                        return match ? parseFloat(match[0].replace(/,/g, '')) : 0;
+                    };
+                    const copayValue = getNumericValue(item.copay_amount_aed) || getNumericValue(item.copay_amount_original);
+                    const isZero = copayValue === 0;
+                    
+                    return `
+                        <div class="financial-row" style="border-top: 2px solid var(--brand); padding-top: 15px; margin-top: 10px;">
+                            <span class="financial-label" style="font-size: 18px; font-weight: 600;">Co-pay Amount:</span>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                                <span class="financial-value" style="font-size: 20px; font-weight: bold; color: ${isZero ? '#4caf50' : 'var(--brand)'};">${formatDualCurrency(item.copay_amount_original, item.copay_amount_aed)}</span>
+                                ${isZero ? '<span style="font-size: 13px; color: #4caf50; margin-top: 4px; font-weight: 500;">Member is fully covered for this benefit</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                })() : ''}
+            `;
+            container.appendChild(financialSection);
+            
+            console.log('✓ Case summary rendered');
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // Function to go back to the claim summary page
+        function goBackToClaimSummary() {
+            document.getElementById('caseSummarySection').classList.remove('show');
+            document.getElementById('claimSummarySection').classList.add('show');
+            
+            // Update the proceed button text since data is already loaded
+            const proceedBtn = document.getElementById('proceedToCaseSummaryBtn');
+            if (proceedBtn) {
+                proceedBtn.textContent = 'View Case Summary';
+                proceedBtn.disabled = false;
+            }
+            
+            window.scrollTo(0, 0);
+        }
+        
+        // Function to save from the claim summary page
+        function saveChangesFromSummary(event) {
+            // Use the same save logic as the main save function
+            saveChanges(event);
+        }
+        
+        // Function to save from the case summary page
+        function saveChangesFromCaseSummary(event) {
+            // Use the same save logic as the main save function
+            saveChanges(event);
+        }
+
+        function displayResults(dataArray) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            
+            Object.keys(summaryOpenedState).forEach(key => delete summaryOpenedState[key]);
+
+            dataArray.forEach((item, index) => {
+                console.log(`Record ${index + 1}:`, {
+                    allKeys: Object.keys(item)
+                });
+                
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                card.innerHTML = `
+                    <button class="btn-view-summary" id="fields-btn-${index}" onclick="toggleFieldsAccordion(${index})">
+                        <span>View Extracted Information</span>
+                        <span class="arrow">▼</span>
+                    </button>
+                    <div class="claim-summary-accordion" id="fields-accordion-${index}">
+                        <table class="data-table" id="table-${index}">
+                            <thead>
+                                <tr>
+                                    <th>Field Name</th>
+                                    <th>Value</th>
+                                    <th>Image</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fields-${index}"></tbody>
+                        </table>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn" id="proceed-btn-${index}" onclick="handleProceedClick(${index})" style="background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);">
+                                Proceed to Claim Summary
+                        </button>
+                            </div>
+                        </div>
+                    ${item.base64_image ? `
+                        <div class="document-preview">
+                            <h3>Document Preview</h3>
+                            <img src="${item.base64_image}" alt="Document" class="preview-image">
+                        </div>
+                    ` : ''}
+                `;
+                container.appendChild(card);
+
+                const fieldsContainer = document.getElementById(`fields-${index}`);
+                renderFields(item, fieldsContainer, index);
+                
+                // Auto-open the first record's extracted info
+                if (index === 0) {
+                    const fieldsAccordion = document.getElementById(`fields-accordion-${index}`);
+                    const fieldsButton = document.getElementById(`fields-btn-${index}`);
+                    if (fieldsAccordion && fieldsButton) {
+                        fieldsAccordion.classList.add('expanded');
+                        fieldsButton.classList.add('expanded');
+                        console.log('Auto-opened extracted info for first record');
+                    }
+                }
+            });
+        }
+
+        function renderFields(data, container, recordIndex) {
+            console.log('Rendering fields for record', recordIndex, '- Total fields:', Object.keys(data).length);
+            
+            // Separate fields into editable and non-editable
+            const editableFields = [];
+            const nonEditableFields = [];
+            
+            Object.keys(data).forEach(key => {
+                if (key === 'base64_image' || key === 'resumeUrl' || key === 'coding' || key.endsWith('_image_snippet')) {
+                    console.log(`  Skipping field: ${key}`);
+                    return;
+                }
+
+                if (NON_EDITABLE_FIELDS.includes(key)) {
+                    nonEditableFields.push(key);
+                } else {
+                    editableFields.push(key);
+                }
+            });
+            
+            // Render editable fields first
+            editableFields.forEach(key => {
+                const row = document.createElement('tr');
+                renderFieldRow(row, key, data, recordIndex);
+                container.appendChild(row);
+            });
+            
+            // Add separator row if there are both editable and non-editable fields
+            if (editableFields.length > 0 && nonEditableFields.length > 0) {
+                const separatorRow = document.createElement('tr');
+                separatorRow.innerHTML = `
+                    <td colspan="3" style="padding: 15px 0; border: none; background: transparent;">
+                        <div style="height: 1px; background: var(--line);"></div>
+                    </td>
+                `;
+                container.appendChild(separatorRow);
+            }
+            
+            // Render non-editable fields
+            nonEditableFields.forEach(key => {
+                const row = document.createElement('tr');
+                renderFieldRow(row, key, data, recordIndex);
+                container.appendChild(row);
+            });
+        }
+        
+        function renderFieldRow(row, key, data, recordIndex) {
+            const value = data[key];
+                
+                const nameCell = document.createElement('td');
+                nameCell.className = 'field-name-cell';
+                nameCell.textContent = fieldLabel(key);
+                row.appendChild(nameCell);
+
+                const valueCell = document.createElement('td');
+                valueCell.className = 'field-value-cell';
+
+                if (typeof value === 'boolean') {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'field-value-wrapper';
+                    
+                    const checkboxWrapper = document.createElement('div');
+                    checkboxWrapper.className = 'checkbox-field';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = value;
+                    checkbox.id = `field-${recordIndex}-${key}`;
+                    
+                    // Check if field should be non-editable
+                    const isNonEditable = NON_EDITABLE_FIELDS.includes(key);
+                    
+                    if (isNonEditable) {
+                        checkbox.disabled = true;
+                        checkbox.style.cursor = 'default';
+                        checkbox.style.opacity = '0.6';
+                        checkbox.title = 'OCR Detected Fields';
+                        checkboxWrapper.title = 'OCR Detected Fields';
+                    } else {
+                        const label = document.createElement('label');
+                        label.textContent = value ? 'Yes' : 'No';
+                        label.style.fontWeight = 'normal';
+                        
+                        checkbox.addEventListener('change', (e) => {
+                            processedData[recordIndex][key] = e.target.checked;
+                            label.textContent = e.target.checked ? 'Yes' : 'No';
+                        });
+                        
+                        checkboxWrapper.appendChild(checkbox);
+                        checkboxWrapper.appendChild(label);
+                    }
+                    
+                    if (isNonEditable) {
+                        checkboxWrapper.appendChild(checkbox);
+                    }
+                    
+                    wrapper.appendChild(checkboxWrapper);
+                    
+                    const copyIcon = document.createElement('span');
+                    copyIcon.className = 'copy-icon material-symbols-outlined';
+                    copyIcon.textContent = 'content_copy';
+                    copyIcon.title = 'Copy to clipboard';
+                    copyIcon.addEventListener('click', () => {
+                        copyToClipboard(checkbox.checked ? 'Yes' : 'No', copyIcon);
+                    });
+                    wrapper.appendChild(copyIcon);
+                    
+                    valueCell.appendChild(wrapper);
+
+                } else if (Array.isArray(value)) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'field-value-wrapper';
+                    
+                    const arrayWrapper = document.createElement('div');
+                    arrayWrapper.className = 'array-field';
+                    arrayWrapper.id = `array-${recordIndex}-${key}`;
+                
+                    // Check if field should be non-editable
+                    const isNonEditable = NON_EDITABLE_FIELDS.includes(key);
+                    
+                    if (isNonEditable) {
+                        arrayWrapper.style.opacity = '0.7';
+                        arrayWrapper.title = 'OCR Detected Fields';
+                    }
+                
+                    if (processedData[recordIndex][key].some(item => Array.isArray(item))) {
+                        processedData[recordIndex][key] = processedData[recordIndex][key].flat();
+                    }
+                    
+                    const renderArray = () => {
+                        arrayWrapper.innerHTML = '';
+                        const currentArray = processedData[recordIndex][key];
+                        
+                        currentArray.forEach((item, itemIndex) => {
+                            const tag = document.createElement('span');
+                            tag.className = 'array-tag';
+                            
+                            if (isNonEditable) {
+                                tag.style.backgroundColor = '#999';
+                                tag.style.cursor = 'default';
+                            }
+                            
+                            const tagText = document.createElement('span');
+                            tagText.textContent = item;
+                            tag.appendChild(tagText);
+                            
+                            // Only add delete button if not non-editable
+                            if (!isNonEditable) {
+                            const deleteBtn = document.createElement('span');
+                            deleteBtn.className = 'array-tag-delete';
+                            deleteBtn.textContent = '×';
+                            deleteBtn.title = 'Remove item';
+                            deleteBtn.addEventListener('click', () => {
+                                processedData[recordIndex][key].splice(itemIndex, 1);
+                                renderArray();
+                            });
+                            tag.appendChild(deleteBtn);
+                            }
+                            
+                            arrayWrapper.appendChild(tag);
+                        });
+                        
+                        // Only add the + button if not non-editable
+                        if (!isNonEditable) {
+                        const addBtn = document.createElement('span');
+                        addBtn.className = 'array-add-btn';
+                        addBtn.textContent = '+';
+                        addBtn.title = 'Add new item';
+                        addBtn.addEventListener('click', () => {
+                            openAddArrayModal((newItem) => {
+                                processedData[recordIndex][key].push(newItem);
+                                renderArray();
+                            });
+                        });
+                        arrayWrapper.appendChild(addBtn);
+                        }
+                    };
+                    
+                    renderArray();
+                    wrapper.appendChild(arrayWrapper);
+                    
+                    const copyIcon = document.createElement('span');
+                    copyIcon.className = 'copy-icon material-symbols-outlined';
+                    copyIcon.textContent = 'content_copy';
+                    copyIcon.title = 'Copy to clipboard';
+                    copyIcon.addEventListener('click', () => {
+                        const currentArray = processedData[recordIndex][key];
+                        copyToClipboard(currentArray.join(', '), copyIcon);
+                    });
+                    wrapper.appendChild(copyIcon);
+                    
+                    valueCell.appendChild(wrapper);
+
+                } else {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'field-value-wrapper';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'field-input';
+                    input.value = value !== null ? value : '';
+                    input.id = `field-${recordIndex}-${key}`;
+                    
+                    // Check if field should be non-editable
+                    if (NON_EDITABLE_FIELDS.includes(key)) {
+                        input.readOnly = true;
+                        input.style.backgroundColor = '#f5f5f5';
+                        input.style.cursor = 'default';
+                        input.style.color = '#666';
+                        input.title = 'OCR Detected Fields';
+                    }
+                    
+                    if (REQUIRED_FIELDS.includes(key)) {
+                        input.required = true;
+                        input.placeholder = 'Required field';
+                        if (!input.value) {
+                            input.classList.add('input-error');
+                        }
+                    }
+                    
+                    input.addEventListener('input', (e) => {
+                        processedData[recordIndex][key] = e.target.value;
+                        
+                        if (REQUIRED_FIELDS.includes(key)) {
+                            if (!e.target.value.trim()) {
+                                e.target.classList.add('input-error');
+                            } else {
+                                e.target.classList.remove('input-error');
+                            }
+                        }
+                    });
+                    
+                    wrapper.appendChild(input);
+                    
+                    const copyIcon = document.createElement('span');
+                    copyIcon.className = 'copy-icon material-symbols-outlined';
+                    copyIcon.textContent = 'content_copy';
+                    copyIcon.title = 'Copy to clipboard';
+                    copyIcon.addEventListener('click', () => {
+                        copyToClipboard(input.value, copyIcon);
+                    });
+                    wrapper.appendChild(copyIcon);
+                    
+                    valueCell.appendChild(wrapper);
+                }
+
+                row.appendChild(valueCell);
+
+                const imageCell = document.createElement('td');
+                imageCell.className = 'field-image-cell';
+                
+                const imageSnippetKey = `${key}_image_snippet`;
+                if (data[imageSnippetKey]) {
+                    const snippetImg = document.createElement('img');
+                    const imageSrc = formatBase64Image(data[imageSnippetKey]);
+                    snippetImg.src = imageSrc;
+                    snippetImg.className = 'field-snippet-image';
+                    snippetImg.alt = `${key} snippet`;
+                    snippetImg.onclick = function(e) {
+                        e.stopPropagation();
+                        openImageModal(imageSrc);
+                    };
+                    snippetImg.onerror = function() {
+                        console.error(`Failed to load image for ${key}:`, data[imageSnippetKey].substring(0, 50));
+                        this.style.display = 'none';
+                    };
+                    imageCell.appendChild(snippetImg);
+                }
+
+                row.appendChild(imageCell);
+        }
+
+        function validateRequiredFields() {
+            let hasError = false;
+            const missingMessages = [];
+
+            document.querySelectorAll('.field-input').forEach(el => el.classList.remove('input-error'));
+
+            processedData.forEach((record, recordIndex) => {
+                REQUIRED_FIELDS.forEach(key => {
+                    const value = record[key];
+                    const inputEl = document.getElementById(`field-${recordIndex}-${key}`);
+                    if (value === null || value === undefined || String(value).trim() === '') {
+                        hasError = true;
+                        if (inputEl) {
+                            inputEl.classList.add('input-error');
+                            if (!inputEl.placeholder) inputEl.placeholder = 'Required field';
+                        }
+                        const display = fieldLabel(key);
+                        if (!missingMessages.includes(`${display} is a required field.`)) {
+                            missingMessages.push(`${display} is a required field.`);
+                        }
+                    }
+                });
+            });
+
+            if (hasError) {
+                showValidationModal(missingMessages.join('<br>'));
+            }
+            return !hasError;
+        }
+
+        function showValidationModal(message) {
+            const modal = document.getElementById('validationModal');
+            const modalMessage = document.getElementById('modalMessage');
+            modalMessage.innerHTML = message;
+            modal.classList.add('show');
+        }
+
+        function closeValidationModal() {
+            const modal = document.getElementById('validationModal');
+            modal.classList.remove('show');
+        }
+
+        function openImageModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            const enlargedImage = document.getElementById('enlargedImage');
+            enlargedImage.src = imageSrc;
+            modal.classList.add('show');
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('show');
+        }
+
+        let addArrayCallback = null;
+
+        function openAddArrayModal(callback) {
+            const modal = document.getElementById('addArrayModal');
+            const input = document.getElementById('newArrayItemInput');
+            input.value = '';
+            modal.classList.add('show');
+            addArrayCallback = callback;
+            
+            setTimeout(() => input.focus(), 100);
+            
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    confirmAddArrayItem();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeAddArrayModal();
+                }
+            };
+        }
+
+        function closeAddArrayModal() {
+            const modal = document.getElementById('addArrayModal');
+            modal.classList.remove('show');
+            addArrayCallback = null;
+        }
+
+        function confirmAddArrayItem() {
+            const input = document.getElementById('newArrayItemInput');
+            const value = input.value.trim();
+            
+            if (value && addArrayCallback) {
+                addArrayCallback(value);
+            }
+            
+            closeAddArrayModal();
+        }
+
+        // Confirmation modal functions
+        let confirmationCallback = null;
+
+        function showConfirmationModal(message, callback) {
+            const modal = document.getElementById('confirmationModal');
+            const messageElement = document.getElementById('confirmationMessage');
+            messageElement.textContent = message;
+            confirmationCallback = callback;
+            modal.classList.add('show');
+        }
+
+        function closeConfirmationModal(confirmed) {
+            const modal = document.getElementById('confirmationModal');
+            modal.classList.remove('show');
+            
+            if (confirmationCallback) {
+                confirmationCallback(confirmed);
+                confirmationCallback = null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const confirmBtn = document.getElementById('confirmAddArrayItem');
+            if (confirmBtn) {
+                confirmBtn.onclick = confirmAddArrayItem;
+            }
+        });
+
+        const summaryOpenedState = {};
+
+        function toggleFieldsAccordion(recordIndex) {
+            const accordion = document.getElementById(`fields-accordion-${recordIndex}`);
+            const button = document.getElementById(`fields-btn-${recordIndex}`);
+            
+            if (!accordion || !button) {
+                console.error('Fields accordion elements not found for record', recordIndex);
+                return;
+            }
+            
+            const isExpanded = accordion.classList.contains('expanded');
+            
+            if (isExpanded) {
+                accordion.classList.remove('expanded');
+                button.classList.remove('expanded');
+                console.log('Fields accordion closed for record', recordIndex);
+            } else {
+                accordion.classList.add('expanded');
+                button.classList.add('expanded');
+                console.log('Fields accordion opened for record', recordIndex);
+            }
+        }
+
+        function toggleSummaryAccordion(recordIndex) {
+            const accordion = document.getElementById(`summary-accordion-${recordIndex}`);
+            const button = document.getElementById(`summary-btn-${recordIndex}`);
+            
+            if (!accordion || !button) {
+                console.error('Summary accordion elements not found for record', recordIndex);
+                return;
+            }
+            
+            const isExpanded = accordion.classList.contains('expanded');
+            
+            if (isExpanded) {
+                accordion.classList.remove('expanded');
+                button.classList.remove('expanded');
+                console.log('Summary accordion closed for record', recordIndex);
+            } else {
+                if (!summaryOpenedState[recordIndex]) {
+                    const fieldsAccordion = document.getElementById(`fields-accordion-${recordIndex}`);
+                    const fieldsButton = document.getElementById(`fields-btn-${recordIndex}`);
+                    if (fieldsAccordion && fieldsButton) {
+                        fieldsAccordion.classList.remove('expanded');
+                        fieldsButton.classList.remove('expanded');
+                        console.log('First time opening summary - closed fields accordion');
+                    }
+                    summaryOpenedState[recordIndex] = true;
+                }
+                
+                accordion.classList.add('expanded');
+                button.classList.add('expanded');
+                console.log('Summary accordion opened for record', recordIndex);
+            }
+        }
+
+        window.toggleFieldsAccordion = toggleFieldsAccordion;
+        window.handleProceedClick = handleProceedClick;
+        window.goBackToFields = goBackToFields;
+        window.handleProceedToCaseSummary = handleProceedToCaseSummary;
+        window.goBackToClaimSummary = goBackToClaimSummary;
+        window.saveChangesFromSummary = saveChangesFromSummary;
+        window.saveChangesFromCaseSummary = saveChangesFromCaseSummary;
+
+        async function saveChanges(event) {
+            if (!processedData || processedData.length === 0) {
+                showError('No data to save');
+                return;
+            }
+
+            if (!validateRequiredFields()) {
+                return;
+            }
+
+            // Use resumeURL2 (from claim summary response) if available, otherwise fall back to original resumeUrl
+            const finalResumeUrl = resumeURL2 || processedData[0].resumeUrl;
+
+            if (!finalResumeUrl) {
+                showError('No resumeUrl found in the response. Cannot resume workflow.');
+                return;
+            }
+
+            console.log('🚀 Saving changes with resumeURL:', finalResumeUrl);
+            console.log('   Using resumeURL2?', !!resumeURL2);
+
+            const saveBtn = event.target;
+            const originalText = saveBtn.textContent;
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving & Resuming Workflow...';
+            hideSuccess();
+
+            if (DEV_MODE) {
+                console.log('DEV MODE: Simulating save (not actually calling API)');
+                
+                const cleanedData = processedData.map(record => {
+                    const cleaned = {};
+                    Object.keys(record).forEach(key => {
+                        if (!key.endsWith('_image_snippet') && 
+                            key !== 'resumeUrl' && 
+                            key !== 'resumeURL' &&
+                            key !== 'base64_image' && 
+                            key !== 'checkList') {
+                            cleaned[key] = record[key];
+                        }
+                    });
+                    return cleaned;
+                });
+                
+                console.log('Would send this data:', cleanedData);
+                
+                setTimeout(() => {
+                    showSuccess('Changes saved successfully! (Dev Mode - No actual API call)');
+                    saveBtn.textContent = 'Saved (Dev Mode)';
+                    saveBtn.style.background = '#4caf50';
+                    console.log('Mock save completed');
+                }, 1000);
+                
+                return;
+            }
+
+            try {
+                const cleanedData = processedData.map(record => {
+                    const cleaned = {};
+                    Object.keys(record).forEach(key => {
+                        if (!key.endsWith('_image_snippet') && 
+                            key !== 'resumeUrl' && 
+                            key !== 'resumeURL' &&
+                            key !== 'base64_image' && 
+                            key !== 'checkList') {
+                            cleaned[key] = record[key];
+                        }
+                    });
+                    return cleaned;
+                });
+
+                console.log('Sending cleaned data:', cleanedData);
+
+                let response;
+                
+                if (USE_CORS_PROXY) {
+                    response = await fetch(CORS_PROXY_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            resumeUrl: finalResumeUrl,
+                            data: cleanedData
+                        })
+                    });
+                } else {
+                    response = await fetch(finalResumeUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(cleanedData)
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Failed to resume workflow: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json().catch(() => ({}));
+
+                showSuccess('Changes saved successfully!');
+                console.log('Workflow resumed with cleaned data:', cleanedData);
+                console.log('Resume response:', result);
+                saveBtn.textContent = 'Saved & Workflow Resumed';
+                saveBtn.style.background = '#4caf50';
+
+                window.location.href = 'confirmation.html';
+
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                
+                let errorMsg = 'Failed to save changes and resume workflow:\n' + error.message;
+                
+                if (error.message === 'Failed to fetch') {
+                    errorMsg += '\n\nThis is a CORS error. Solutions:\n\n';
+                    errorMsg += '1. Add CORS headers to your n8n Wait node response\n';
+                    errorMsg += '2. Run the cors-proxy.js server and set USE_CORS_PROXY = true\n';
+                    errorMsg += '3. Host this HTML on the same domain as n8n';
+                }
+                
+                showError(errorMsg);
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            }
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            hideError();
+        }
+
+        function hideSuccess() {
+            const successDiv = document.getElementById('successMessage');
+            if (successDiv) {
+                successDiv.classList.remove('show');
+            }
+        }
+
+        // Helper function to ensure base64 image has proper data URI format
+        function formatBase64Image(base64String) {
+            if (!base64String) return null;
+            
+            if (base64String.startsWith('data:image')) {
+                return base64String;
+            }
+            
+            if (base64String.startsWith('/9j/') || base64String.startsWith('iVBOR')) {
+                const imageType = base64String.startsWith('/9j/') ? 'jpeg' : 'png';
+                return `data:image/${imageType};base64,${base64String}`;
+            }
+            
+            return `data:image/png;base64,${base64String}`;
+        }
+
+        function exportJSON() {
+            const dataStr = JSON.stringify(processedData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'processed-data.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function processAnother() {
+            selectedFiles = [];
+            processedData = null;
+            resumeURL2 = null; // Reset resumeURL2
+            window.storedResumeURL1 = null; // Reset storedResumeURL1
+
+            fileInput.value = '';
+            updateFileList();
+            document.getElementById('resultsSection').classList.remove('show');
+            document.getElementById('claimSummarySection').classList.remove('show');
+            document.getElementById('caseSummarySection').classList.remove('show');
+            document.getElementById('errorPage').classList.remove('show');
+            document.getElementById('uploadSection').style.display = 'block';
+            hideError();
+            hideSuccess();
+        }
+
+        function showErrorPage() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('resultsSection').classList.remove('show');
+            document.getElementById('errorPage').classList.add('show');
+            console.log('Error page displayed');
+        }
+
+        function retryUpload() {
+            if (selectedFiles && selectedFiles.length > 0) {
+                console.log('Retrying upload with existing files...');
+                hideError();
+                document.getElementById('errorPage').classList.remove('show');
+                uploadFile();
+            } else {
+                processAnother();
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        async function copyToClipboard(text, iconElement) {
+            try {
+                await navigator.clipboard.writeText(text);
+                
+                const originalIcon = iconElement.textContent;
+                iconElement.textContent = 'check';
+                iconElement.classList.add('copied');
+                
+                setTimeout(() => {
+                    iconElement.textContent = originalIcon;
+                    iconElement.classList.remove('copied');
+                }, 1500);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalIcon = iconElement.textContent;
+                    iconElement.textContent = 'check';
+                    iconElement.classList.add('copied');
+                    setTimeout(() => {
+                        iconElement.textContent = originalIcon;
+                        iconElement.classList.remove('copied');
+                    }, 1500);
+                } catch (err2) {
+                    console.error('Fallback copy failed:', err2);
+                }
+                document.body.removeChild(textarea);
+            }
+        }
+    </script>
+</body>
+</html>

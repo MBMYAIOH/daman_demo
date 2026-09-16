@@ -1,0 +1,22 @@
+node_modules/
+
+# Environment files - never commit real credentials or webhook URLs
+.env
+.env.*
+!.env.example
+
+# Platform build output / local state
+.render/
+*.log
+npm-debug.log*
+
+# Editor / agent tooling
+.claude/
+
+# Sample payloads. Kept on disk for local testing, deliberately out of git:
+# scan_req_body.json is a scan of a real medical document.
+fixtures/
+
+# OS noise
+.DS_Store
+Thumbs.db

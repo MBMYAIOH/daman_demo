@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daman - Claim Submitted</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300..700&display=swap">
+    <style>
+        :root {
+            --brand: #882345;
+            --brand-dark: #6b1b36;
+            --navy: #003478;
+            --ink: #010913;
+            --muted: #6c6f70;
+            --page-from: #f6f7f9;
+            --page-to: #e4e7ed;
+            --font: 'Roboto Flex', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font); color: var(--ink); background: linear-gradient(135deg, var(--page-from) 0%, var(--page-to) 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(1, 9, 19, 0.08); border-top: 4px solid var(--brand); max-width: 640px; width: 100%; padding: 40px; text-align: center; }
+        .logo { width: 96px; height: auto; margin-bottom: 20px; }
+        h1 { color: var(--brand); font-size: 28px; font-weight: 600; margin-bottom: 10px; }
+        p { color: var(--muted); font-size: 16px; margin-bottom: 8px; line-height: 1.6; }
+        .btn { display: inline-block; margin-top: 24px; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; text-decoration: none; }
+        .btn:hover { filter: brightness(1.08); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="logo.svg" alt="Daman" class="logo">
+        <h1>Your claim has been submitted</h1>
+        <p>The reviewed claim data has been sent for processing.</p>
+        <p>You can close this page or process another claim.</p>
+        <a class="btn" href="./">Process another claim</a>
+    </div>
+</body>
+</html>
