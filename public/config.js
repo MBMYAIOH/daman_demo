@@ -118,6 +118,28 @@ const CONFIG = {
         gender: 'Gender'
     },
 
+    // Monetary fields that must reach the workflow as real numbers.
+    //
+    // The workflow multiplies these by an exchange rate for currency conversion.
+    // JavaScript coerces a plain numeric string fine ("800.00" * 3.67 works), but
+    // anything with a thousands separator or a currency prefix does not:
+    // "1,250.00" * 3.67 and "AED 800" * 3.67 both produce NaN. OCR returns these
+    // as strings, and the reviewer editing a field always produces a string, so
+    // they are normalised to numbers before being sent back.
+    NUMERIC_FIELDS: [
+        'claimed_amount',
+        'covered_amount',
+        'benefit_limit',
+        'excess_amount',
+        'deductible',
+        'copay_cap',
+        'copay_amount',
+        'copay_percentage',
+        'patient_responsibility',
+        'reimbursement_amount',
+        'conversion_rate'
+    ],
+
     // Daman product plans, used for display normalisation
     PLANS: ['Thiqa', 'Enhanced', 'Basic', 'Abu Dhabi Basic', 'Care', 'Premier'],
 

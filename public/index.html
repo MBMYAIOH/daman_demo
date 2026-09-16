@@ -1294,6 +1294,37 @@
             return FIELD_LABELS[key] || key.replace(/_/g, ' ');
         }
 
+        // Monetary fields the workflow does arithmetic on (see config.js)
+        const NUMERIC_FIELDS = CONFIG.NUMERIC_FIELDS || [];
+
+        // Normalises monetary fields to real numbers before they go back to the
+        // workflow. "AED 1,250.00" -> 1250. Display is untouched: the reviewer
+        // keeps seeing exactly what OCR extracted or what they typed.
+        //
+        // Anything that does not cleanly read as an amount is left exactly as-is
+        // rather than guessed at - better to send the original through than to
+        // silently turn it into the wrong number. Note this assumes the
+        // comma-thousands convention used in the UAE, not "1.250,50".
+        function coerceNumericFields(record) {
+            NUMERIC_FIELDS.forEach(key => {
+                if (!(key in record)) return;
+
+                const raw = record[key];
+                if (typeof raw === 'number') return;
+                if (raw === null || raw === undefined) return;
+                if (String(raw).trim() === '') return;
+
+                const stripped = String(raw).replace(/[^0-9.\-]/g, '');
+                if (!/^-?\d+(\.\d{1,2})?$/.test(stripped)) {
+                    console.warn(`Leaving ${key} as-is, could not read "${raw}" as an amount`);
+                    return;
+                }
+
+                record[key] = parseFloat(stripped);
+            });
+            return record;
+        }
+
         // Applies the configured branding to the document
         function applyBranding() {
             if (BRAND.NAME) {
@@ -1744,7 +1775,7 @@
                             cleaned[key] = record[key];
                         }
                     });
-                    return cleaned;
+                    return coerceNumericFields(cleaned);
                 });
 
                 console.log('Sending data:', cleanedData);
@@ -1992,7 +2023,7 @@
                             cleaned[key] = record[key];
                         }
                     });
-                    return cleaned;
+                    return coerceNumericFields(cleaned);
                 });
 
                 console.log('Sending data:', cleanedData);
@@ -2897,7 +2928,7 @@
                             cleaned[key] = record[key];
                         }
                     });
-                    return cleaned;
+                    return coerceNumericFields(cleaned);
                 });
                 
                 console.log('Would send this data:', cleanedData);
@@ -2924,7 +2955,7 @@
                             cleaned[key] = record[key];
                         }
                     });
-                    return cleaned;
+                    return coerceNumericFields(cleaned);
                 });
 
                 console.log('Sending cleaned data:', cleanedData);
